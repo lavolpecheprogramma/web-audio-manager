@@ -1,5 +1,10 @@
 # WAM - Web Audio Manager
 WAM is a small, flexible and dependency free library that helps you manage sounds on your website trough [Web Audio Api](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)!
+
+## Live Demo
+
+https://lavolpecheprogramma.github.io/web-audio-manager
+
 ## Basic config
 To play a single track in loop on your site:
 
