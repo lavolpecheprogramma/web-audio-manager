@@ -19,7 +19,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "examples": "http-server ./examples -p 3000"
+    "examples": "http-server ./docs -p 3000"
   },
   "files": [
     "dist"
