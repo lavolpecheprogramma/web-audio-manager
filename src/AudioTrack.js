@@ -48,7 +48,7 @@ export default class AudioTrack {
             this.load()
             .then(() => {
                 this.connectBuffer(loop);
-                if(startVolume) this.gainNode.setVolume(startVolume);
+                if(startVolume !== undefined) this.gainNode.setVolume(startVolume);
 
                 this.gainNode.play(this.startOffset%this.buffer.duration);
                 this.startTime = this.audioCtx.currentTime;

@@ -7,7 +7,7 @@ import AudioGroup from './AudioGroup';
 export default class AudioManager {
 	constructor(audioCtx) {
 		this.audioCtx = audioCtx;
-		this.maxVolume = 0.5;
+		this.maxVolume = 1;
 		this.groups = {};
 
 		this.onTouchStart = this.onTouchStart.bind(this);

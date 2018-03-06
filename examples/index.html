@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<style>
+			html,body{
+				height: 100%;
+				width: 100%;
+			}
+			.buttons{
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 200px;
+				height: 100px;
+				margin-top: -100px;
+				margin-left: -100px;
+			}
+			.button {
+				margin: 10px 0;
+				text-align: center;
+				border: 2px solid;
+				padding: 5px 0;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<a href="/beat-detection/index.html">>> Beat Detection</a><br>
+		<a href="/register-band/index.html">>> Register Frequency band</a>
+		<div class="buttons">
+			<div class="button play">
+				<span>play</span>
+			</div>
+			<div class="button pause">
+				<span>pause</span>
+			</div>
+			<div class="button stop">
+				<span>stop</span>
+			</div>
+			<div class="button fadein">
+				<span>fadein</span>
+			</div>
+			<div class="button fadeout">
+				<span>fadeout</span>
+			</div>
+		</div>
+		<script src="/WebAudioManager.umd.js"></script>
+		<script type="text/javascript">
+			//create webaudio context
+			const wam = new WebAudioManager();
+			//Create a track
+			const track = new wam.AudioTrack({url: './audio/2.mp3', preload: true});
+
+			track.gain.connectNode(wam.gain);
+			
+			document.querySelector('.play').addEventListener('click', function(){
+				track.play(true,1);
+			});
+			document.querySelector('.pause').addEventListener('click', function(){
+				track.pause();
+			});
+			document.querySelector('.stop').addEventListener('click', function(){
+				track.stop();
+			});
+			document.querySelector('.fadein').addEventListener('click', function(){
+				track.fade('in',2);
+			});
+			document.querySelector('.fadeout').addEventListener('click', function(){
+				track.fade('out',2);
+			});
+		</script>
+	</body>
+</html>
+
+

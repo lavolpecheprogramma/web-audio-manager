@@ -326,7 +326,7 @@ var AudioTrack = function () {
             return new Promise(function (success, reject) {
                 _this2.load().then(function () {
                     _this2.connectBuffer(loop);
-                    if (startVolume) _this2.gainNode.setVolume(startVolume);
+                    if (startVolume !== undefined) _this2.gainNode.setVolume(startVolume);
 
                     _this2.gainNode.play(_this2.startOffset % _this2.buffer.duration);
                     _this2.startTime = _this2.audioCtx.currentTime;
@@ -365,6 +365,7 @@ var AudioTrack = function () {
         value: function fade(type, time, loop) {
             var _this3 = this;
 
+            time = time || 0.5;
             if (type == 'out') {
                 this.pause(time);
                 this.gainNode.setVolume(0, time);
@@ -438,7 +439,7 @@ var AudioManager = function () {
 		classCallCheck(this, AudioManager);
 
 		this.audioCtx = audioCtx;
-		this.maxVolume = 0.5;
+		this.maxVolume = 1;
 		this.groups = {};
 
 		this.onTouchStart = this.onTouchStart.bind(this);

@@ -251,7 +251,7 @@ class AudioTrack {
             this.load()
             .then(() => {
                 this.connectBuffer(loop);
-                if(startVolume) this.gainNode.setVolume(startVolume);
+                if(startVolume !== undefined) this.gainNode.setVolume(startVolume);
 
                 this.gainNode.play(this.startOffset%this.buffer.duration);
                 this.startTime = this.audioCtx.currentTime;
@@ -281,6 +281,7 @@ class AudioTrack {
     }
 
     fade(type, time, loop){
+        time = time || 0.5;
         if(type == 'out'){
             this.pause(time);
             this.gainNode.setVolume(0, time);
@@ -335,7 +336,7 @@ class AudioGroup {
 class AudioManager {
 	constructor(audioCtx) {
 		this.audioCtx = audioCtx;
-		this.maxVolume = 0.5;
+		this.maxVolume = 1;
 		this.groups = {};
 
 		this.onTouchStart = this.onTouchStart.bind(this);
