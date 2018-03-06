@@ -12,7 +12,7 @@ analyzer.registerBand('kick', 50, 70);
 
 //create an AudioTrack and start to load
 const track = new wam.AudioTrack({
-    url: '/audio/2.mp3',
+    url: '../audio/2.mp3',
     preload: true
 });
 

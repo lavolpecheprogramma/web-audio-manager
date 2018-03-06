@@ -16,7 +16,7 @@ analyzer.setupBeatDetection({
 
 //create an AudioTrack and start to load
 const track = new wam.AudioTrack({
-    url: '/audio/405603__frankum__newtime-electronic-music-track.mp3',
+    url: '../audio/405603__frankum__newtime-electronic-music-track.mp3',
     preload: true
 });
 
