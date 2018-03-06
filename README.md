@@ -37,11 +37,14 @@ To play a single track in loop on your site:
 
 ### AudioGroup
 To switch between tracks you can create an `AudioGroup`, which provides a fade transition between tracks. 
-	
+
+``` javascript
 	group.setTrack(id, fadeDuration, loop);
+```
 
 It is useful if you have a set of background tracks that have to play once at time and another set of sounds (like FX) that you want to play indipendently.
 
+``` javascript
 	// create a manager, which will bind to a new [AudioContext](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext)
 	const wam = new WebAudioManager();
 
@@ -63,7 +66,7 @@ It is useful if you have a set of background tracks that have to play once at ti
 		// play the second track with a fade transition of 2 seconds
 		group.setTrack('secondSample', 2); 
 	});
-
+```
 ### Analyzer
 Often you want some action to happen in reaction to audio, you can use `AnalyzerNode`, which provides you with utilities for doing so.
 
@@ -72,7 +75,8 @@ Here is code for basic beat detection:
 
 
 First you initialize an `AnalyzerNode`, connect it to a `GainNode` and call `setupBeatDetection`
-	
+
+``` javascript	
 	const analyzer = new WebAudioManager.AnalyzerNode(wam.ctx)
 	
 	analyzer.connectNode(wam.gain);
@@ -84,22 +88,23 @@ First you initialize an `AnalyzerNode`, connect it to a `GainNode` and call `set
 	};
 	
 	analyzer.setupBeatDetection(analyzerSettings)
-	
+```	
 	
 In this example you can see a basic configuration, but you can play around with the settings to obtain detection of different patterns.
 
 Then you can do
-	
+
+``` javascript	
 	analyzer.update()
 	const framesSinceLastBeat = analyzer.detectBeat()
-	
+```	
 This will provide you the number of frames since the last beat peak was detected.
 This way you can set frames on your animations, or simply check when the beat starts and fire them.
 
 **You have to call `analyzer.update()`** before `analyzer.detectBeat()` if you need the most recent info about the audio being analyzed.
 
 Using the above configuration we can now do:
-	
+``` javascript	
 	//create an AudioTrack and start to load
 	const track = new WebAudioManager.AudioTrack({
 		url: './test.mp3',
@@ -128,7 +133,8 @@ Using the above configuration we can now do:
 
 	// start to analyze audio that come to the analyzer
 	analyzeAudio();
-	
+```
+
 #### Analyze specific frequency band
 
 If you want to customize further the analyzer and **watch for specific frequencies**, you can do so by using
@@ -139,7 +145,7 @@ Calling `getFreqBand(id)` will provide you with a value between 0 and 1 which is
 
 Calling `getAllFreqBand()` instead will provide you with an object where each key is the band id you choose when setting it up, and the value is the frequency band volume, always between 0 and 1.
 
-
+``` javascript
 	// setup analyzer
 	analyzer.registerBand('kick', 50, 70);
 	analyzer.registerBand('highFreq', 1500, 2200);
@@ -156,7 +162,7 @@ Calling `getAllFreqBand()` instead will provide you with an object where each ke
 		// scale an element according to kick level
 		div.style.transform = 'scale('+ kickLevel +')';
 	}
-
+```
 
 ## WebAudioManager
 
