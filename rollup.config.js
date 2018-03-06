@@ -13,7 +13,7 @@ export default [
             format: 'umd'
         }, {
             name: 'WebAudioManager',
-            file: './examples/WebAudioManager.umd.js',
+            file: './docs/webaudiomanager.umd.js',
             format: 'umd'
         }],
         plugins: [

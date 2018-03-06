@@ -1,9 +1,9 @@
 {
   "name": "webaudio-manager",
   "version": "1.0.0",
-  "main": "dist/WebAudioManager.js",
-  "module": "dist/WebAudioManager.esm.js",
-  "browser": "dist/WebAudioManager.umd.js",
+  "main": "dist/webaudiomanager.js",
+  "module": "dist/webaudiomanager.esm.js",
+  "browser": "dist/webaudiomanager.umd.js",
   "dependencies": {},
   "devDependencies": {
     "babel-core": "^6.26.0",
