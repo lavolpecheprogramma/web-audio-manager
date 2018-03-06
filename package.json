@@ -1,0 +1,27 @@
+{
+  "name": "webaudio-manager",
+  "version": "1.0.0",
+  "main": "dist/WebAudioManager.js",
+  "module": "dist/WebAudioManager.esm.js",
+  "browser": "dist/WebAudioManager.umd.js",
+  "dependencies": {},
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-env": "^1.6.1",
+    "browser-sync": "^2.23.6",
+    "http-server": "^0.11.1",
+    "rollup": "^0.56.3",
+    "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-commonjs": "^8.2.6",
+    "rollup-plugin-node-resolve": "^3.0.3"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "examples": "http-server ./examples -p 3000"
+  },
+  "files": [
+    "dist"
+  ]
+}
