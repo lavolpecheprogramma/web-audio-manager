@@ -9,27 +9,27 @@ https://lavolpecheprogramma.github.io/web-audio-manager
 To play a single track in loop on your site:
 
 ``` javascript
-	//create webaudio context
-	const wam = new WebAudioManager();
+//create webaudio context
+const wam = new WebAudioManager();
 
-	// create an AudioTrack and start to load
-	const track = new WebAudioManager.AudioTrack({
-		url: './test.mp3',
-		preload: true
-	}, wam.ctx());
+// create an AudioTrack and start to load
+const track = new WebAudioManager.AudioTrack({
+	url: './test.mp3',
+	preload: true
+});
 
-	// connect the track to speakers
-	track.gain.connectNode(wam.gain);
+// connect the track to speakers
+track.gain.connectNode(wam.gain);
 
-	// play the track in loop
-	track.play(true);
-	
-	...
+// play the track in loop
+track.play(true);
 
-	// you can pause the track
-	track.pause()
-	// or fadeout in a given time
-	track.fade('out', 1);
+...
+
+// you can pause the track
+track.pause()
+// or fadeout in a given time
+track.fade('out', 1);
 ```
 
 
@@ -39,33 +39,33 @@ To play a single track in loop on your site:
 To switch between tracks you can create an `AudioGroup`, which provides a fade transition between tracks. 
 
 ``` javascript
-	group.setTrack(id, fadeDuration, loop);
+group.setTrack(id, fadeDuration, loop);
 ```
 
 It is useful if you have a set of background tracks that have to play once at time and another set of sounds (like FX) that you want to play indipendently.
 
 ``` javascript
-	// create a manager, which will bind to a new [AudioContext](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext)
-	const wam = new WebAudioManager();
+// create a manager, which will bind to a new [AudioContext](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext)
+const wam = new WebAudioManager();
 
-	// create an AudioGroup
-	const backgroundGroup = new WebAudioManager.AudioGroup(wam.ctx);
+// create an AudioGroup
+const backgroundGroup = new WebAudioManager.AudioGroup();
 
-	// add tracks to it
-	backgroundGroup({id: 'firstSample', url: './background1.mp3', preload: true});
-	backgroundGroup({id: 'secondSample', url: './background2.mp3', preload: true});
+// add tracks to it
+backgroundGroup({id: 'firstSample', url: './background1.mp3', preload: true});
+backgroundGroup({id: 'secondSample', url: './background2.mp3', preload: true});
 
-	//connect group to speakers
-	group.gain.connectNode(wam.gain);
+//connect group to speakers
+group.gain.connectNode(wam.gain);
 
-	// play first track by id
-	group.setTrack('firstSample', 2);
+// play first track by id
+group.setTrack('firstSample', 2);
 
-	// for example we have a button to change the track
-	button.addEventListener('click', function(){
-		// play the second track with a fade transition of 2 seconds
-		group.setTrack('secondSample', 2); 
-	});
+// for example we have a button to change the track
+button.addEventListener('click', function(){
+	// play the second track with a fade transition of 2 seconds
+	group.setTrack('secondSample', 2); 
+});
 ```
 ### Analyzer
 Often you want some action to happen in reaction to audio, you can use `AnalyzerNode`, which provides you with utilities for doing so.
@@ -77,17 +77,17 @@ Here is code for basic beat detection:
 First you initialize an `AnalyzerNode`, connect it to a `GainNode` and call `setupBeatDetection`
 
 ``` javascript	
-	const analyzer = new WebAudioManager.AnalyzerNode(wam.ctx)
-	
-	analyzer.connectNode(wam.gain);
+const analyzer = new WebAudioManager.AnalyzerNode()
 
-	const analyzerSettings = {
-	    holdTime: 30, //num of frames to hold a beat
-	    decay: 0.98,
-	    beatMin: 0.5 //a volume less than this is no beat
-	};
-	
-	analyzer.setupBeatDetection(analyzerSettings)
+analyzer.connectNode(wam.gain);
+
+const analyzerSettings = {
+    holdTime: 30, //num of frames to hold a beat
+    decay: 0.98,
+    beatMin: 0.5 //a volume less than this is no beat
+};
+
+analyzer.setupBeatDetection(analyzerSettings)
 ```	
 	
 In this example you can see a basic configuration, but you can play around with the settings to obtain detection of different patterns.
@@ -105,34 +105,34 @@ This way you can set frames on your animations, or simply check when the beat st
 
 Using the above configuration we can now do:
 ``` javascript	
-	//create an AudioTrack and start to load
-	const track = new WebAudioManager.AudioTrack({
-		url: './test.mp3',
-		preload: true
-	}, wam.ctx());
+//create an AudioTrack and start to load
+const track = new WebAudioManager.AudioTrack({
+	url: './test.mp3',
+	preload: true
+}, wam.ctx());
 
-	// connect the track to analyzer
-	track.gain.connectNode(analyzer);
+// connect the track to analyzer
+track.gain.connectNode(analyzer);
 
-	// example function of beat detection
-	function analyzeAudio(){
-		// every frame call this function
-	    window.requestAnimationFrame(analyzeAudio);
+// example function of beat detection
+function analyzeAudio(){
+	// every frame call this function
+    window.requestAnimationFrame(analyzeAudio);
 
-	    // update track data 
-	    analyzer.update();
+    // update track data 
+    analyzer.update();
 
-	    // return the number of frame from last detection
-	    var isBeatDetected = analyzer.detectBeat();
+    // return the number of frame from last detection
+    var isBeatDetected = analyzer.detectBeat();
 
-	    //if is the first frame after detection
-	    if(isBeatDetected < 1){
-		console.log('[WAM] Beat detected!');
-	    }
-	}
+    //if is the first frame after detection
+    if(isBeatDetected < 1){
+	console.log('[WAM] Beat detected!');
+    }
+}
 
-	// start to analyze audio that come to the analyzer
-	analyzeAudio();
+// start to analyze audio that come to the analyzer
+analyzeAudio();
 ```
 
 #### Analyze specific frequency band
@@ -146,22 +146,22 @@ Calling `getFreqBand(id)` will provide you with a value between 0 and 1 which is
 Calling `getAllFreqBand()` instead will provide you with an object where each key is the band id you choose when setting it up, and the value is the frequency band volume, always between 0 and 1.
 
 ``` javascript
-	// setup analyzer
-	analyzer.registerBand('kick', 50, 70);
-	analyzer.registerBand('highFreq', 1500, 2200);
+// setup analyzer
+analyzer.registerBand('kick', 50, 70);
+analyzer.registerBand('highFreq', 1500, 2200);
 
-	// example function of beat detection
-	function analyzeAudio(){
-		...
-		
-		// update track data 
-		analyzer.update();
-		
-		const kickLevel = analyzer.getFreqBand('kick');
-		
-		// scale an element according to kick level
-		div.style.transform = 'scale('+ kickLevel +')';
-	}
+// example function of beat detection
+function analyzeAudio(){
+	...
+
+	// update track data 
+	analyzer.update();
+
+	const kickLevel = analyzer.getFreqBand('kick');
+
+	// scale an element according to kick level
+	div.style.transform = 'scale('+ kickLevel +')';
+}
 ```
 
 ## WebAudioManager
@@ -196,7 +196,7 @@ or
 const track = new WebAudioManager.AudioTrack({
     url: './test.mp3',
     preload: true
-}, wam.ctx);
+});
 ```
 
 ### wam.gain
@@ -270,7 +270,7 @@ So to create a new AudioTrack you can do something like this:
 const track = new WebAudioManager.AudioTrack({
     url: './test.mp3',
     preload: true
-}, wam.ctx);
+});
 ```
 
 ### track.gain
@@ -459,7 +459,7 @@ group.remove();
 Return the instance of GainNode.
 
 ``` javascript
-gainNode = new GainNode(wam.ctx);
+gainNode = new GainNode();
 ```
 
 
@@ -524,7 +524,7 @@ gainNode.remove()
 
 ### Constructor
 ``` javascript
-const analyzer = new WebAudioManager.AnalyzerNode(wam.ctx);
+const analyzer = new WebAudioManager.AnalyzerNode();
 ```	
 
 ### connectNode(nodeTo)
