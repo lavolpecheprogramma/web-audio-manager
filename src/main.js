@@ -21,11 +21,18 @@ const props = {
 	AnalyzerNode
 };
 
+function onClickWindow (e){
+	window.removeEventListener('click', onClickWindow)
+	context.resume().then(() => {
+		console.log('Playback resumed successfully');
+	});
+}
+
 const WebAudioManager = function() {
 
 	const ctx = getWebAudioCtx();
 	const WAM = new AudioManager(ctx);
-
+	window.addEventListener('click', onClickWindow)
 	// Bind every prop to the audio context.
 	for (let k in props) {
 		WAM[k] = function(...args) {

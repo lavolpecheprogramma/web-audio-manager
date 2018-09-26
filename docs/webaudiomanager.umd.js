@@ -276,7 +276,7 @@ var AudioTrack = function () {
         this.trackData = trackData;
         this.gainNode = new GainNode(audioCtx);
         this.startOffset = 0;
-
+        this.volume = 1;
         if (trackData.preload) this.load();
     }
 
@@ -290,6 +290,12 @@ var AudioTrack = function () {
         value: function remove() {
             this.stop();
             this.gainNode.remove();
+        }
+    }, {
+        key: 'setVolume',
+        value: function setVolume(volume) {
+            this.volume = volume;
+            this.gainNode.setVolume(volume);
         }
     }, {
         key: 'load',
@@ -371,7 +377,7 @@ var AudioTrack = function () {
                 this.gainNode.setVolume(0, time);
             } else {
                 this.play(loop, 0).then(function () {
-                    _this3.gainNode.setVolume(1, time);
+                    _this3.gainNode.setVolume(_this3.volume, time);
                 });
             }
         }
@@ -525,11 +531,18 @@ var props = {
 	AnalyzerNode: AnalyzerNode
 };
 
+function onClickWindow(e) {
+	window.removeEventListener('click', onClickWindow);
+	context.resume().then(function () {
+		console.log('Playback resumed successfully');
+	});
+}
+
 var WebAudioManager = function WebAudioManager() {
 
 	var ctx = getWebAudioCtx();
 	var WAM = new AudioManager(ctx);
-
+	window.addEventListener('click', onClickWindow);
 	// Bind every prop to the audio context.
 
 	var _loop = function _loop(k) {

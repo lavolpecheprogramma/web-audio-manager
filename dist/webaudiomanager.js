@@ -213,7 +213,7 @@ class AudioTrack {
         this.trackData = trackData;
         this.gainNode = new GainNode(audioCtx);
         this.startOffset = 0;
-
+        this.volume = 1;
         if(trackData.preload) this.load();
     }
 
@@ -228,6 +228,11 @@ class AudioTrack {
     remove(){
         this.stop();
         this.gainNode.remove();
+    }
+
+    setVolume(volume){
+        this.volume = volume;
+        this.gainNode.setVolume(volume);
     }
 
     load(){
@@ -292,7 +297,7 @@ class AudioTrack {
         }else{
             this.play(loop, 0)
             .then(() => {
-                this.gainNode.setVolume(1, time);
+                this.gainNode.setVolume(this.volume, time);
             });
         }
     }
@@ -424,11 +429,18 @@ const props = {
 	AnalyzerNode
 };
 
+function onClickWindow (e){
+	window.removeEventListener('click', onClickWindow);
+	context.resume().then(() => {
+		console.log('Playback resumed successfully');
+	});
+}
+
 const WebAudioManager = function() {
 
 	const ctx = getWebAudioCtx();
 	const WAM = new AudioManager(ctx);
-
+	window.addEventListener('click', onClickWindow);
 	// Bind every prop to the audio context.
 	for (let k in props) {
 		WAM[k] = function(...args) {

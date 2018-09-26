@@ -6,7 +6,7 @@ export default class AudioTrack {
         this.trackData = trackData;
         this.gainNode = new GainNode(audioCtx);
         this.startOffset = 0;
-
+        this.volume = 1;
         if(trackData.preload) this.load();
     }
 
@@ -21,6 +21,11 @@ export default class AudioTrack {
     remove(){
         this.stop();
         this.gainNode.remove();
+    }
+
+    setVolume(volume){
+        this.volume = volume;
+        this.gainNode.setVolume(volume);
     }
 
     load(){
@@ -85,7 +90,7 @@ export default class AudioTrack {
         }else{
             this.play(loop, 0)
             .then(() => {
-                this.gainNode.setVolume(1, time);
+                this.gainNode.setVolume(this.volume, time);
             });
         }
     }
