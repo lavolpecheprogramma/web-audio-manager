@@ -1,7 +1,7 @@
 {
-  "name": "webaudio-manager",
+  "name": "webaudiomanager",
   "version": "1.0.0",
-  "main": "src/main.js",
+  "main": "dist/webaudiomanager.js",
   "module": "dist/webaudiomanager.esm.js",
   "browser": "dist/webaudiomanager.umd.js",
   "description": "WAM is a small, flexible and dependency free library that helps you manage sounds on your website trough Web Audio Api!",
