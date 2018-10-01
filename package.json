@@ -1,9 +1,28 @@
 {
   "name": "webaudio-manager",
-  "version": "1.1.0",
-  "main": "dist/webaudiomanager.js",
+  "version": "1.0.0",
+  "main": "src/main.js",
   "module": "dist/webaudiomanager.esm.js",
   "browser": "dist/webaudiomanager.umd.js",
+  "description": "WAM is a small, flexible and dependency free library that helps you manage sounds on your website trough Web Audio Api!",
+  "keywords": [
+    "web audio", "webaudio", "webaudio-manager", "web audio api"
+  ],
+  "homepage": "https://lavolpecheprogramma.github.io/web-audio-manager/",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/lavolpecheprogramma/web-audio-manager/"
+  },
+  "contributors": [{ 
+    "name" : "Alberto Parziale (@lavolpecheprogramma)",
+    "url" : "https://lavolpecheprogramma.github.io"
+  }, { 
+    "name" : "Vincent De Feo (@ghzmdr)",
+    "url" : "https://ghzmdr.github.io"
+  }],
+  "bugs": {
+    "url": "https://github.com/lavolpecheprogramma/web-audio-manager/issues"
+  },
   "dependencies": {},
   "devDependencies": {
     "babel-core": "^6.26.0",
