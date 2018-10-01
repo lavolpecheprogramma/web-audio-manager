@@ -429,7 +429,7 @@ const props = {
 	AnalyzerNode
 };
 
-let ctx
+let ctx;
 
 function onClickWindow (e){
 	window.removeEventListener('click', onClickWindow);

@@ -42,9 +42,10 @@
     "rollup-plugin-node-resolve": "^3.0.3"
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "examples": "http-server ./docs -p 3000"
+    "build": "rollup -c rollup.config.js",
+    "dev": "rollup -c rollup.config.js -w",
+    "examples": "http-server ./docs -p 3000",
+    "prepublish": "npm run build"
   },
   "files": [
     "dist"
