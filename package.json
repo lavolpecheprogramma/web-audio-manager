@@ -1,6 +1,6 @@
 {
   "name": "webaudiomanager",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/webaudiomanager.js",
   "module": "dist/webaudiomanager.esm.js",
   "browser": "dist/webaudiomanager.umd.js",
