@@ -71,6 +71,207 @@ class GainNode {
     }
 }
 
+class AudioManager {
+  constructor(audioCtx) {
+    this.audioCtx = audioCtx;
+    this.maxVolume = 1;
+    this.groups = {};
+
+    this.onTouchStart = this.onTouchStart.bind(this);
+
+    this.setupGain();
+    this.setupListeners();
+  }
+
+  setupGain() {
+    this.gainNode = new GainNode(this.audioCtx);
+    this.gainNode.connectNode(this.audioCtx.destination);
+    this.gainNode.setVolume(this.maxVolume);
+  }
+
+  get ctx() {
+	  return this.audioCtx
+  }
+
+
+  get gain() {
+	  return this.gainNode
+  }
+
+  setupListeners() {
+    if ('ontouchstart' in window) {
+      window.addEventListener('touchstart', this.onTouchStart, false);
+    }
+  }
+
+  onChangePageVisibility(pageIsVisible) {
+    if (this.audioCtx === undefined) { return }
+    this.gainNode.setVolume(pageIsVisible ? this.maxVolume : 0);
+  }
+
+  onTouchStart() {
+    this.unLockWebAudio();
+    window.removeEventListener('touchstart', this.onTouchStart, false);
+  }
+
+  unLockWebAudio() {
+    // create empty buffer
+    const buffer = this.audioCtx.createBuffer(1, 1, 44100);
+    const source = this.audioCtx.createBufferSource();
+    source.buffer = buffer;
+
+    source.connect(this.audioCtx.destination);
+    source.start(0);
+  }
+}
+
+// const AudioManager = require('mylibrary');
+
+// const myManager = new AudioManager(ctx);
+// const gainNode = new AudioManager.GainNode(ctx);
+
+// const track = new AudioManager.AudioTrack({/*data*/});
+// const group = new AudioManager.AudioGroup({/*data*/});
+
+// group.add(track);
+
+// myManager.addGroup(group);
+
+class AudioTrack {
+  constructor(audioCtx, trackData) {
+    this.audioCtx = audioCtx;
+    this.trackData = trackData;
+    this.gainNode = new GainNode(audioCtx);
+    this.startOffset = 0;
+    this.volume = 1;
+    if (trackData.preload) this.load();
+  }
+
+  connectBuffer(loop) {
+    this.gainNode.connectBuffer(this.buffer, loop);
+  }
+
+  get gain() {
+    return this.gainNode
+  }
+
+  remove() {
+    this.stop();
+    this.gainNode.remove();
+  }
+
+  setVolume(volume) {
+    this.volume = volume;
+    this.gainNode.setVolume(volume);
+  }
+
+  load() {
+    if (this.loadPromise) { return this.loadPromise }
+    this.loadPromise = new Promise((success, reject) =>{
+      const request = new XMLHttpRequest();
+      request.open('GET', this.trackData.url, true);
+      request.responseType = 'arraybuffer';
+      request.onload = () => {
+        this.audioCtx.decodeAudioData(request.response, (buffer) =>{
+          this.buffer = buffer;
+          this.loaded = true;
+          success();
+        });
+      };
+      request.send();
+    });
+    return this.loadPromise
+  }
+
+  play(loop, startVolume) {
+    if (this.audioCtx === undefined) { return Promise.reject() }
+
+    return new Promise((success, reject) =>{
+      this.load()
+        .then(() => {
+          this.connectBuffer(loop);
+          if (startVolume !== undefined) this.gainNode.setVolume(startVolume);
+
+          this.gainNode.play(this.startOffset % this.buffer.duration);
+          this.startTime = this.audioCtx.currentTime;
+          success();
+        });
+    })
+  }
+
+  stop(delay) {
+    if (this.audioCtx === undefined || !this.gainNode.currentSource) { return }
+    delay = delay || 0;
+
+    this.isPaused = false;
+    this.pausedAt = 0;
+    this.startOffset = 0;
+    this.gainNode.stop(delay);
+  }
+
+  pause(delay) {
+    if (this.audioCtx === undefined || !this.gainNode.currentSource) { return }
+    var delay = delay || 0;
+
+    this.isPaused = true;
+    this.startOffset += this.audioCtx.currentTime - this.startTime + delay;
+
+    this.gainNode.pause(delay);
+  }
+
+  fade(type, time, loop) {
+    time = time || 0.5;
+    if (type == 'out') {
+      this.pause(time);
+      this.gainNode.setVolume(0, time);
+    } else {
+      this.play(loop, 0)
+        .then(() => {
+          this.gainNode.setVolume(this.volume, time);
+        });
+    }
+  }
+}
+
+class AudioGroup {
+  constructor(audioCtx) {
+    this.audioCtx = audioCtx;
+    this.gainNode = new GainNode(audioCtx);
+    this.tracks = {};
+  }
+
+  addTrack(trackData) {
+    this.tracks[trackData.id] = new AudioTrack(this.audioCtx, trackData);
+    this.tracks[trackData.id].gain.connectNode(this.gainNode);
+  }
+
+  remove() {
+    for (const id in this.tracks) {
+      this.removeTrack(id);
+    }
+  }
+
+  get gain() {
+    return this.gainNode
+  }
+
+  removeTrack(id) {
+    if (!this.tracks[id]) return
+    this.tracks[id].remove();
+  }
+
+  getTrack(id) {
+    return this.tracks[id]
+  }
+
+  setTrack(id, fade, loop) {
+    if (!this.tracks[id]) return
+    if (this.currentTrack) this.tracks[this.currentTrack].fade('out', fade);
+    this.currentTrack = id;
+    this.tracks[id].fade('in', fade, loop);
+  }
+}
+
 class AnalyzerNode {
 	constructor(audioCtx) {
 		if (audioCtx === undefined) { return; }
@@ -207,251 +408,42 @@ class AnalyzerNode {
 	}
 }
 
-class AudioTrack {
-    constructor(audioCtx, trackData) {
-        this.audioCtx = audioCtx;
-        this.trackData = trackData;
-        this.gainNode = new GainNode(audioCtx);
-        this.startOffset = 0;
-        this.volume = 1;
-        if(trackData.preload) this.load();
-    }
-
-    connectBuffer(loop){
-        this.gainNode.connectBuffer(this.buffer, loop);
-    }
-
-    get gain() {
-        return this.gainNode;
-    }
-
-    remove(){
-        this.stop();
-        this.gainNode.remove();
-    }
-
-    setVolume(volume){
-        this.volume = volume;
-        this.gainNode.setVolume(volume);
-    }
-
-    load(){
-        if(this.loadPromise) { return this.loadPromise; }
-        this.loadPromise = new Promise((success, reject) =>{
-            var request = new XMLHttpRequest();
-            request.open("GET", this.trackData.url,true);
-            request.responseType= 'arraybuffer';
-            request.onload = () => {
-                this.audioCtx.decodeAudioData(request.response, (buffer) =>{
-                    this.buffer = buffer;
-                    this.loaded = true;
-                    success();
-                });
-            };
-            request.send();
-        });
-        return this.loadPromise;
-    }
-
-    play(loop, startVolume){
-        if(this.audioCtx === undefined){ return Promise.reject(); }
-
-        return new Promise((success, reject) =>{
-            this.load()
-            .then(() => {
-                this.connectBuffer(loop);
-                if(startVolume !== undefined) this.gainNode.setVolume(startVolume);
-
-                this.gainNode.play(this.startOffset%this.buffer.duration);
-                this.startTime = this.audioCtx.currentTime;
-                success();
-            });
-        });
-    }
-
-    stop(delay){
-        if(this.audioCtx === undefined || !this.gainNode.currentSource){ return; }
-        delay = delay || 0;
-
-        this.isPaused = false;
-        this.pausedAt = 0;
-        this.startOffset = 0;
-        this.gainNode.stop(delay);
-    }
-
-    pause(delay){
-        if(this.audioCtx === undefined || !this.gainNode.currentSource){ return; }
-        var delay = delay || 0;
-
-        this.isPaused = true;
-        this.startOffset += this.audioCtx.currentTime - this.startTime + delay;
-
-        this.gainNode.pause(delay);
-    }
-
-    fade(type, time, loop){
-        time = time || 0.5;
-        if(type == 'out'){
-            this.pause(time);
-            this.gainNode.setVolume(0, time);
-        }else{
-            this.play(loop, 0)
-            .then(() => {
-                this.gainNode.setVolume(this.volume, time);
-            });
-        }
-    }
-}
-
-class AudioGroup {
-	constructor(audioCtx) {
-		this.audioCtx = audioCtx;
-		this.gainNode = new GainNode(audioCtx);
-		this.tracks = {};
-	}
-
-	addTrack(trackData) {
-		this.tracks[trackData.id] = new AudioTrack(trackData, this.audioCtx);
-		this.tracks[trackData.id].gain.connectNode(this.gainNode);
-	}
-
-	remove(){
-		for (let id in this.tracks){
-			this.removeTrack(id);
-		}
-	}
-
-	get gain() {
-		return this.gainNode;
-	}
-
-	removeTrack(id) {
-		if(!this.tracks[id]) return;
-		this.tracks[id].remove();
-	}
-
-	getTrack(id) {
-		return tracks[id];
-	}
-
-	setTrack(id, fade, loop){
-		if(!this.tracks[id]) return;
-		if(this.currentTrack) this.tracks[this.currentTrack].fade('out', fade);
-		this.currentTrack = id;
-		this.tracks[id].fade('in', fade, loop);
-	}
-}
-
-class AudioManager {
-	constructor(audioCtx) {
-		this.audioCtx = audioCtx;
-		this.maxVolume = 1;
-		this.groups = {};
-
-		this.onTouchStart = this.onTouchStart.bind(this);
-
-		this.setupGain();
-		this.setupListeners();
-	}
-
-	setupGain(){
-		this.gainNode = new GainNode(this.audioCtx);
-		this.gainNode.connectNode(this.audioCtx.destination);
-		this.gainNode.setVolume(this.maxVolume);
-	}
-
-	get ctx(){
-	  return this.audioCtx;
-	}
-
-
-	get gain() {
-	  return this.gainNode;
-	}
-
-	addGroup(group) {}
-
-	getGroup(groupId) {}
-
-	getTrack(groupId, trackId) {}
-
-	setupListeners(){
-		if('ontouchstart' in window){
-			window.addEventListener('touchstart', this.onTouchStart, false);
-		}
-	}
-
-	onChangePageVisibility(pageIsVisible){
-		if(this.audioCtx === undefined){ return; }
-		this.gainNode.setVolume(pageIsVisible ? this.maxVolume : 0);
-	}
-
-	onTouchStart() {
-		this.unLockWebAudio();
-		window.removeEventListener('touchstart', this.onTouchStart, false);
-	}
-
-	unLockWebAudio(){
-		// create empty buffer
-		var buffer = this.audioCtx.createBuffer(1, 1, 44100);
-		var source = this.audioCtx.createBufferSource();
-		source.buffer = buffer;
-
-		source.connect(this.audioCtx.destination);
-		source.start(0);
-	}
-}
-
-// const AudioManager = require('mylibrary');
-
-// const myManager = new AudioManager(ctx);
-// const gainNode = new AudioManager.GainNode(ctx);
-
-// const track = new AudioManager.AudioTrack({/*data*/});
-// const group = new AudioManager.AudioGroup({/*data*/});
-
-// group.add(track);
-
-// myManager.addGroup(group);
-
 function getWebAudioCtx() {
-	if(window.AudioContext || window.webkitAudioContext){
-		return new (window.AudioContext || window.webkitAudioContext)();
-	} else {
-		throw new Error('WebAudio Api Unsupported')
-	}
+  if (window.AudioContext || window.webkitAudioContext) {
+    return new (window.AudioContext || window.webkitAudioContext)()
+  }
+  throw new Error('WebAudio Api Unsupported')
 }
 
 const props = {
-	GainNode,
-	AudioTrack,
-	AudioGroup,
-	AnalyzerNode
+  GainNode,
+  AudioTrack,
+  AudioGroup,
+  AnalyzerNode
 };
 
 let ctx;
 
-function onClickWindow (e){
-	window.removeEventListener('click', onClickWindow);
-	ctx.resume().then(() => {
-		console.log('Playback resumed successfully');
-	});
+function onClickWindow(e) {
+  window.removeEventListener('click', onClickWindow);
+  ctx.resume().then(() => {
+    console.log('Playback resumed successfully');
+  });
 }
 
 const WebAudioManager = function() {
+  ctx = getWebAudioCtx();
+  const WAM = new AudioManager(ctx);
+  window.addEventListener('click', onClickWindow);
+  // Bind every prop to the audio context.
+  for (const k in props) {
+    WAM[k] = function(...args) {
+      const curriedArgs = [ctx].concat(args);
+      return new props[k](...curriedArgs)
+    };
+  }
 
-	ctx = getWebAudioCtx();
-	const WAM = new AudioManager(ctx);
-	window.addEventListener('click', onClickWindow);
-	// Bind every prop to the audio context.
-	for (let k in props) {
-		WAM[k] = function(...args) {
-			const curriedArgs = [ctx].concat(args);
-			return new props[k](...curriedArgs);
-		};
-	}
-
-	return WAM;
+  return WAM
 };
 
 exports.default = WebAudioManager;

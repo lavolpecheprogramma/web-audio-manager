@@ -122,6 +122,245 @@ var GainNode = function () {
     return GainNode;
 }();
 
+var AudioManager = function () {
+  function AudioManager(audioCtx) {
+    classCallCheck(this, AudioManager);
+
+    this.audioCtx = audioCtx;
+    this.maxVolume = 1;
+    this.groups = {};
+
+    this.onTouchStart = this.onTouchStart.bind(this);
+
+    this.setupGain();
+    this.setupListeners();
+  }
+
+  createClass(AudioManager, [{
+    key: 'setupGain',
+    value: function setupGain() {
+      this.gainNode = new GainNode(this.audioCtx);
+      this.gainNode.connectNode(this.audioCtx.destination);
+      this.gainNode.setVolume(this.maxVolume);
+    }
+  }, {
+    key: 'setupListeners',
+    value: function setupListeners() {
+      if ('ontouchstart' in window) {
+        window.addEventListener('touchstart', this.onTouchStart, false);
+      }
+    }
+  }, {
+    key: 'onChangePageVisibility',
+    value: function onChangePageVisibility(pageIsVisible) {
+      if (this.audioCtx === undefined) {
+        return;
+      }
+      this.gainNode.setVolume(pageIsVisible ? this.maxVolume : 0);
+    }
+  }, {
+    key: 'onTouchStart',
+    value: function onTouchStart() {
+      this.unLockWebAudio();
+      window.removeEventListener('touchstart', this.onTouchStart, false);
+    }
+  }, {
+    key: 'unLockWebAudio',
+    value: function unLockWebAudio() {
+      // create empty buffer
+      var buffer = this.audioCtx.createBuffer(1, 1, 44100);
+      var source = this.audioCtx.createBufferSource();
+      source.buffer = buffer;
+
+      source.connect(this.audioCtx.destination);
+      source.start(0);
+    }
+  }, {
+    key: 'ctx',
+    get: function get$$1() {
+      return this.audioCtx;
+    }
+  }, {
+    key: 'gain',
+    get: function get$$1() {
+      return this.gainNode;
+    }
+  }]);
+  return AudioManager;
+}();
+
+var AudioTrack = function () {
+  function AudioTrack(audioCtx, trackData) {
+    classCallCheck(this, AudioTrack);
+
+    this.audioCtx = audioCtx;
+    this.trackData = trackData;
+    this.gainNode = new GainNode(audioCtx);
+    this.startOffset = 0;
+    this.volume = 1;
+    if (trackData.preload) this.load();
+  }
+
+  createClass(AudioTrack, [{
+    key: 'connectBuffer',
+    value: function connectBuffer(loop) {
+      this.gainNode.connectBuffer(this.buffer, loop);
+    }
+  }, {
+    key: 'remove',
+    value: function remove() {
+      this.stop();
+      this.gainNode.remove();
+    }
+  }, {
+    key: 'setVolume',
+    value: function setVolume(volume) {
+      this.volume = volume;
+      this.gainNode.setVolume(volume);
+    }
+  }, {
+    key: 'load',
+    value: function load() {
+      var _this = this;
+
+      if (this.loadPromise) {
+        return this.loadPromise;
+      }
+      this.loadPromise = new Promise(function (success, reject) {
+        var request = new XMLHttpRequest();
+        request.open('GET', _this.trackData.url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function () {
+          _this.audioCtx.decodeAudioData(request.response, function (buffer) {
+            _this.buffer = buffer;
+            _this.loaded = true;
+            success();
+          });
+        };
+        request.send();
+      });
+      return this.loadPromise;
+    }
+  }, {
+    key: 'play',
+    value: function play(loop, startVolume) {
+      var _this2 = this;
+
+      if (this.audioCtx === undefined) {
+        return Promise.reject();
+      }
+
+      return new Promise(function (success, reject) {
+        _this2.load().then(function () {
+          _this2.connectBuffer(loop);
+          if (startVolume !== undefined) _this2.gainNode.setVolume(startVolume);
+
+          _this2.gainNode.play(_this2.startOffset % _this2.buffer.duration);
+          _this2.startTime = _this2.audioCtx.currentTime;
+          success();
+        });
+      });
+    }
+  }, {
+    key: 'stop',
+    value: function stop(delay) {
+      if (this.audioCtx === undefined || !this.gainNode.currentSource) {
+        return;
+      }
+      delay = delay || 0;
+
+      this.isPaused = false;
+      this.pausedAt = 0;
+      this.startOffset = 0;
+      this.gainNode.stop(delay);
+    }
+  }, {
+    key: 'pause',
+    value: function pause(delay) {
+      if (this.audioCtx === undefined || !this.gainNode.currentSource) {
+        return;
+      }
+      var delay = delay || 0;
+
+      this.isPaused = true;
+      this.startOffset += this.audioCtx.currentTime - this.startTime + delay;
+
+      this.gainNode.pause(delay);
+    }
+  }, {
+    key: 'fade',
+    value: function fade(type, time, loop) {
+      var _this3 = this;
+
+      time = time || 0.5;
+      if (type == 'out') {
+        this.pause(time);
+        this.gainNode.setVolume(0, time);
+      } else {
+        this.play(loop, 0).then(function () {
+          _this3.gainNode.setVolume(_this3.volume, time);
+        });
+      }
+    }
+  }, {
+    key: 'gain',
+    get: function get$$1() {
+      return this.gainNode;
+    }
+  }]);
+  return AudioTrack;
+}();
+
+var AudioGroup = function () {
+  function AudioGroup(audioCtx) {
+    classCallCheck(this, AudioGroup);
+
+    this.audioCtx = audioCtx;
+    this.gainNode = new GainNode(audioCtx);
+    this.tracks = {};
+  }
+
+  createClass(AudioGroup, [{
+    key: 'addTrack',
+    value: function addTrack(trackData) {
+      this.tracks[trackData.id] = new AudioTrack(this.audioCtx, trackData);
+      this.tracks[trackData.id].gain.connectNode(this.gainNode);
+    }
+  }, {
+    key: 'remove',
+    value: function remove() {
+      for (var id in this.tracks) {
+        this.removeTrack(id);
+      }
+    }
+  }, {
+    key: 'removeTrack',
+    value: function removeTrack(id) {
+      if (!this.tracks[id]) return;
+      this.tracks[id].remove();
+    }
+  }, {
+    key: 'getTrack',
+    value: function getTrack(id) {
+      return this.tracks[id];
+    }
+  }, {
+    key: 'setTrack',
+    value: function setTrack(id, fade, loop) {
+      if (!this.tracks[id]) return;
+      if (this.currentTrack) this.tracks[this.currentTrack].fade('out', fade);
+      this.currentTrack = id;
+      this.tracks[id].fade('in', fade, loop);
+    }
+  }, {
+    key: 'gain',
+    get: function get$$1() {
+      return this.gainNode;
+    }
+  }]);
+  return AudioGroup;
+}();
+
 var AnalyzerNode = function () {
 	function AnalyzerNode(audioCtx) {
 		classCallCheck(this, AnalyzerNode);
@@ -268,301 +507,51 @@ var AnalyzerNode = function () {
 	return AnalyzerNode;
 }();
 
-var AudioTrack = function () {
-    function AudioTrack(audioCtx, trackData) {
-        classCallCheck(this, AudioTrack);
-
-        this.audioCtx = audioCtx;
-        this.trackData = trackData;
-        this.gainNode = new GainNode(audioCtx);
-        this.startOffset = 0;
-        this.volume = 1;
-        if (trackData.preload) this.load();
-    }
-
-    createClass(AudioTrack, [{
-        key: 'connectBuffer',
-        value: function connectBuffer(loop) {
-            this.gainNode.connectBuffer(this.buffer, loop);
-        }
-    }, {
-        key: 'remove',
-        value: function remove() {
-            this.stop();
-            this.gainNode.remove();
-        }
-    }, {
-        key: 'setVolume',
-        value: function setVolume(volume) {
-            this.volume = volume;
-            this.gainNode.setVolume(volume);
-        }
-    }, {
-        key: 'load',
-        value: function load() {
-            var _this = this;
-
-            if (this.loadPromise) {
-                return this.loadPromise;
-            }
-            this.loadPromise = new Promise(function (success, reject) {
-                var request = new XMLHttpRequest();
-                request.open("GET", _this.trackData.url, true);
-                request.responseType = 'arraybuffer';
-                request.onload = function () {
-                    _this.audioCtx.decodeAudioData(request.response, function (buffer) {
-                        _this.buffer = buffer;
-                        _this.loaded = true;
-                        success();
-                    });
-                };
-                request.send();
-            });
-            return this.loadPromise;
-        }
-    }, {
-        key: 'play',
-        value: function play(loop, startVolume) {
-            var _this2 = this;
-
-            if (this.audioCtx === undefined) {
-                return Promise.reject();
-            }
-
-            return new Promise(function (success, reject) {
-                _this2.load().then(function () {
-                    _this2.connectBuffer(loop);
-                    if (startVolume !== undefined) _this2.gainNode.setVolume(startVolume);
-
-                    _this2.gainNode.play(_this2.startOffset % _this2.buffer.duration);
-                    _this2.startTime = _this2.audioCtx.currentTime;
-                    success();
-                });
-            });
-        }
-    }, {
-        key: 'stop',
-        value: function stop(delay) {
-            if (this.audioCtx === undefined || !this.gainNode.currentSource) {
-                return;
-            }
-            delay = delay || 0;
-
-            this.isPaused = false;
-            this.pausedAt = 0;
-            this.startOffset = 0;
-            this.gainNode.stop(delay);
-        }
-    }, {
-        key: 'pause',
-        value: function pause(delay) {
-            if (this.audioCtx === undefined || !this.gainNode.currentSource) {
-                return;
-            }
-            var delay = delay || 0;
-
-            this.isPaused = true;
-            this.startOffset += this.audioCtx.currentTime - this.startTime + delay;
-
-            this.gainNode.pause(delay);
-        }
-    }, {
-        key: 'fade',
-        value: function fade(type, time, loop) {
-            var _this3 = this;
-
-            time = time || 0.5;
-            if (type == 'out') {
-                this.pause(time);
-                this.gainNode.setVolume(0, time);
-            } else {
-                this.play(loop, 0).then(function () {
-                    _this3.gainNode.setVolume(_this3.volume, time);
-                });
-            }
-        }
-    }, {
-        key: 'gain',
-        get: function get$$1() {
-            return this.gainNode;
-        }
-    }]);
-    return AudioTrack;
-}();
-
-var AudioGroup = function () {
-	function AudioGroup(audioCtx) {
-		classCallCheck(this, AudioGroup);
-
-		this.audioCtx = audioCtx;
-		this.gainNode = new GainNode(audioCtx);
-		this.tracks = {};
-	}
-
-	createClass(AudioGroup, [{
-		key: 'addTrack',
-		value: function addTrack(trackData) {
-			this.tracks[trackData.id] = new AudioTrack(trackData, this.audioCtx);
-			this.tracks[trackData.id].gain.connectNode(this.gainNode);
-		}
-	}, {
-		key: 'remove',
-		value: function remove() {
-			for (var id in this.tracks) {
-				this.removeTrack(id);
-			}
-		}
-	}, {
-		key: 'removeTrack',
-		value: function removeTrack(id) {
-			if (!this.tracks[id]) return;
-			this.tracks[id].remove();
-		}
-	}, {
-		key: 'getTrack',
-		value: function getTrack(id) {
-			return tracks[id];
-		}
-	}, {
-		key: 'setTrack',
-		value: function setTrack(id, fade, loop) {
-			if (!this.tracks[id]) return;
-			if (this.currentTrack) this.tracks[this.currentTrack].fade('out', fade);
-			this.currentTrack = id;
-			this.tracks[id].fade('in', fade, loop);
-		}
-	}, {
-		key: 'gain',
-		get: function get$$1() {
-			return this.gainNode;
-		}
-	}]);
-	return AudioGroup;
-}();
-
-var AudioManager = function () {
-	function AudioManager(audioCtx) {
-		classCallCheck(this, AudioManager);
-
-		this.audioCtx = audioCtx;
-		this.maxVolume = 1;
-		this.groups = {};
-
-		this.onTouchStart = this.onTouchStart.bind(this);
-
-		this.setupGain();
-		this.setupListeners();
-	}
-
-	createClass(AudioManager, [{
-		key: 'setupGain',
-		value: function setupGain() {
-			this.gainNode = new GainNode(this.audioCtx);
-			this.gainNode.connectNode(this.audioCtx.destination);
-			this.gainNode.setVolume(this.maxVolume);
-		}
-	}, {
-		key: 'addGroup',
-		value: function addGroup(group) {}
-	}, {
-		key: 'getGroup',
-		value: function getGroup(groupId) {}
-	}, {
-		key: 'getTrack',
-		value: function getTrack(groupId, trackId) {}
-	}, {
-		key: 'setupListeners',
-		value: function setupListeners() {
-			if ('ontouchstart' in window) {
-				window.addEventListener('touchstart', this.onTouchStart, false);
-			}
-		}
-	}, {
-		key: 'onChangePageVisibility',
-		value: function onChangePageVisibility(pageIsVisible) {
-			if (this.audioCtx === undefined) {
-				return;
-			}
-			this.gainNode.setVolume(pageIsVisible ? this.maxVolume : 0);
-		}
-	}, {
-		key: 'onTouchStart',
-		value: function onTouchStart() {
-			this.unLockWebAudio();
-			window.removeEventListener('touchstart', this.onTouchStart, false);
-		}
-	}, {
-		key: 'unLockWebAudio',
-		value: function unLockWebAudio() {
-			// create empty buffer
-			var buffer = this.audioCtx.createBuffer(1, 1, 44100);
-			var source = this.audioCtx.createBufferSource();
-			source.buffer = buffer;
-
-			source.connect(this.audioCtx.destination);
-			source.start(0);
-		}
-	}, {
-		key: 'ctx',
-		get: function get$$1() {
-			return this.audioCtx;
-		}
-	}, {
-		key: 'gain',
-		get: function get$$1() {
-			return this.gainNode;
-		}
-	}]);
-	return AudioManager;
-}();
-
 function getWebAudioCtx() {
-	if (window.AudioContext || window.webkitAudioContext) {
-		return new (window.AudioContext || window.webkitAudioContext)();
-	} else {
-		throw new Error('WebAudio Api Unsupported');
-	}
+  if (window.AudioContext || window.webkitAudioContext) {
+    return new (window.AudioContext || window.webkitAudioContext)();
+  }
+  throw new Error('WebAudio Api Unsupported');
 }
 
 var props = {
-	GainNode: GainNode,
-	AudioTrack: AudioTrack,
-	AudioGroup: AudioGroup,
-	AnalyzerNode: AnalyzerNode
+  GainNode: GainNode,
+  AudioTrack: AudioTrack,
+  AudioGroup: AudioGroup,
+  AnalyzerNode: AnalyzerNode
 };
 
 var ctx = void 0;
 
 function onClickWindow(e) {
-	window.removeEventListener('click', onClickWindow);
-	ctx.resume().then(function () {
-		console.log('Playback resumed successfully');
-	});
+  window.removeEventListener('click', onClickWindow);
+  ctx.resume().then(function () {
+    console.log('Playback resumed successfully');
+  });
 }
 
 var WebAudioManager = function WebAudioManager() {
+  ctx = getWebAudioCtx();
+  var WAM = new AudioManager(ctx);
+  window.addEventListener('click', onClickWindow);
+  // Bind every prop to the audio context.
 
-	ctx = getWebAudioCtx();
-	var WAM = new AudioManager(ctx);
-	window.addEventListener('click', onClickWindow);
-	// Bind every prop to the audio context.
+  var _loop = function _loop(k) {
+    WAM[k] = function () {
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
 
-	var _loop = function _loop(k) {
-		WAM[k] = function () {
-			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-				args[_key] = arguments[_key];
-			}
+      var curriedArgs = [ctx].concat(args);
+      return new (Function.prototype.bind.apply(props[k], [null].concat(toConsumableArray(curriedArgs))))();
+    };
+  };
 
-			var curriedArgs = [ctx].concat(args);
-			return new (Function.prototype.bind.apply(props[k], [null].concat(toConsumableArray(curriedArgs))))();
-		};
-	};
+  for (var k in props) {
+    _loop(k);
+  }
 
-	for (var k in props) {
-		_loop(k);
-	}
-
-	return WAM;
+  return WAM;
 };
 
 return WebAudioManager;

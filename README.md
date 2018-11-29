@@ -13,7 +13,7 @@ To play a single track in loop on your site:
 const wam = new WebAudioManager();
 
 // create an AudioTrack and start to load
-const track = new WebAudioManager.AudioTrack({
+const track = wam.AudioTrack({
 	url: './test.mp3',
 	preload: true
 });
@@ -49,7 +49,7 @@ It is useful if you have a set of background tracks that have to play once at ti
 const wam = new WebAudioManager();
 
 // create an AudioGroup
-const backgroundGroup = new WebAudioManager.AudioGroup();
+const backgroundGroup = wam.AudioGroup();
 
 // add tracks to it
 backgroundGroup({id: 'firstSample', url: './background1.mp3', preload: true});
@@ -77,7 +77,7 @@ Here is code for basic beat detection:
 First you initialize an `AnalyzerNode`, connect it to a `GainNode` and call `setupBeatDetection`
 
 ``` javascript	
-const analyzer = new WebAudioManager.AnalyzerNode()
+const analyzer = wam.AnalyzerNode()
 
 analyzer.connectNode(wam.gain);
 
@@ -106,7 +106,7 @@ This way you can set frames on your animations, or simply check when the beat st
 Using the above configuration we can now do:
 ``` javascript	
 //create an AudioTrack and start to load
-const track = new WebAudioManager.AudioTrack({
+const track = wam.AudioTrack({
 	url: './test.mp3',
 	preload: true
 }, wam.ctx());
@@ -187,13 +187,13 @@ It is important because **you have to pass it during creation of other nodes.**
 
 ``` javascript
 // create an analyzer
-const analyzer = new WebAudioManager.AnalyzerNode(wam.ctx);
+const analyzer = wam.AnalyzerNode(wam.ctx);
 ```
 or
 
 ``` javascript
 //create an AudioTrack and start to load
-const track = new WebAudioManager.AudioTrack({
+const track = wam.AudioTrack({
     url: './test.mp3',
     preload: true
 });
@@ -267,7 +267,7 @@ So to create a new AudioTrack you can do something like this:
 
 ``` javascript
 //create an AudioTrack and start to load
-const track = new WebAudioManager.AudioTrack({
+const track = wam.AudioTrack({
     url: './test.mp3',
     preload: true
 });
@@ -385,7 +385,7 @@ Audio context required.
 
 ``` javascript
 //create an AudioGroup
-const group = new WebAudioManager.AudioGroup(wam.ctx);
+const group = wam.AudioGroup();
 ```
 
 ### group.gain
@@ -524,7 +524,7 @@ gainNode.remove()
 
 ### Constructor
 ``` javascript
-const analyzer = new WebAudioManager.AnalyzerNode();
+const analyzer = wam.AnalyzerNode();
 ```	
 
 ### connectNode(nodeTo)
