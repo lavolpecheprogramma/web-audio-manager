@@ -51,13 +51,17 @@ export default class GainNode {
     }
 
     pause(delay){
-        this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
-        this.currentSource.stop(this.audioCtx.currentTime + delay);
+        if (this.audioCtx.readyState > 0) {
+            this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
+            this.currentSource.stop(this.audioCtx.currentTime + delay);
+        }
     }
 
     stop(delay){
-        this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
-        this.currentSource.stop(this.audioCtx.currentTime + delay);
+        if (this.audioCtx.readyState > 0) {
+            this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
+            this.currentSource.stop(this.audioCtx.currentTime + delay);
+        }
     }
 
     remove(){
