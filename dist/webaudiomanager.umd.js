@@ -39,87 +39,91 @@ var toConsumableArray = function (arr) {
 };
 
 var GainNode = function () {
-    function GainNode(audioCtx) {
-        classCallCheck(this, GainNode);
+  function GainNode(audioCtx) {
+    classCallCheck(this, GainNode);
 
-        if (audioCtx === undefined) {
-            return;
-        }
-        this.audioCtx = audioCtx;
-        this.node = audioCtx.createGain(audioCtx);
+    if (audioCtx === undefined) {
+      return;
     }
+    this.audioCtx = audioCtx;
+    this.node = audioCtx.createGain(audioCtx);
+  }
 
-    createClass(GainNode, [{
-        key: "connectNode",
-        value: function connectNode(nodeTo) {
-            this.node.connect(nodeTo.node || nodeTo);
-            this.parentNode = nodeTo;
-        }
-    }, {
-        key: "disconnectNode",
-        value: function disconnectNode() {
-            if (this.parentNode) {
-                this.node.disconnect(this.parentNode.node || this.parentNode);
-            }
-        }
-    }, {
-        key: "connectBuffer",
-        value: function connectBuffer(buffer, loop) {
-            if (this.audioCtx === undefined) {
-                return;
-            }
-            this.disconnectBuffer();
+  createClass(GainNode, [{
+    key: "connectNode",
+    value: function connectNode(nodeTo) {
+      this.node.connect(nodeTo.node || nodeTo);
+      this.parentNode = nodeTo;
+    }
+  }, {
+    key: "disconnectNode",
+    value: function disconnectNode() {
+      if (this.parentNode) {
+        this.node.disconnect(this.parentNode.node || this.parentNode);
+      }
+    }
+  }, {
+    key: "connectBuffer",
+    value: function connectBuffer(buffer, loop) {
+      if (this.audioCtx === undefined) {
+        return;
+      }
+      this.disconnectBuffer();
 
-            //creating source node
-            this.currentSource = this.audioCtx.createBufferSource();
-            this.currentSource.buffer = buffer;
+      // creating source node
+      this.currentSource = this.audioCtx.createBufferSource();
+      this.currentSource.buffer = buffer;
 
-            if (loop !== undefined) {
-                this.currentSource.loop = loop;
-            } else {
-                this.currentSource.loop = false;
-            }
-            this.currentSource.connect(this.node);
-        }
-    }, {
-        key: "disconnectBuffer",
-        value: function disconnectBuffer() {
-            if (this.currentSource) {
-                this.currentSource.disconnect(this.gain);
-                this.currentSource = undefined;
-            }
-        }
-    }, {
-        key: "setVolume",
-        value: function setVolume(volume, fadeDuration) {
-            this.node.gain.linearRampToValueAtTime(volume, this.audioCtx.currentTime + (fadeDuration || 0));
-        }
-    }, {
-        key: "play",
-        value: function play(atTime) {
-            this.currentSource.start(this.audioCtx.currentTime, atTime);
-        }
-    }, {
-        key: "pause",
-        value: function pause(delay) {
-            this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
-            this.currentSource.stop(this.audioCtx.currentTime + delay);
-        }
-    }, {
-        key: "stop",
-        value: function stop(delay) {
-            this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
-            this.currentSource.stop(this.audioCtx.currentTime + delay);
-        }
-    }, {
-        key: "remove",
-        value: function remove() {
-            this.disconnectBuffer();
-            this.disconnectNode();
-            delete this.node;
-        }
-    }]);
-    return GainNode;
+      if (loop !== undefined) {
+        this.currentSource.loop = loop;
+      } else {
+        this.currentSource.loop = false;
+      }
+      this.currentSource.connect(this.node);
+    }
+  }, {
+    key: "disconnectBuffer",
+    value: function disconnectBuffer() {
+      if (this.currentSource) {
+        this.currentSource.disconnect(this.gain);
+        this.currentSource = undefined;
+      }
+    }
+  }, {
+    key: "setVolume",
+    value: function setVolume(volume, fadeDuration) {
+      this.node.gain.linearRampToValueAtTime(volume, this.audioCtx.currentTime + (fadeDuration || 0));
+    }
+  }, {
+    key: "play",
+    value: function play(atTime) {
+      this.currentSource.start(this.audioCtx.currentTime, atTime);
+    }
+  }, {
+    key: "pause",
+    value: function pause(delay) {
+      this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
+      if (!this.currentSource.playbackState || this.currentSource.playbackState === 2) {
+        this.currentSource.stop(this.audioCtx.currentTime + delay);
+      }
+    }
+  }, {
+    key: "stop",
+    value: function stop(delay) {
+      this.node.gain.cancelScheduledValues(this.audioCtx.currentTime);
+      if (!this.currentSource.playbackState || this.currentSource.playbackState === 2) {
+        this.currentSource.stop(this.audioCtx.currentTime + delay);
+      }
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      this.disconnectBuffer();
+      this.disconnectNode();
+      delete this.node;
+    }
+  }]);
+  return GainNode;
 }();
 
 var AudioManager = function () {
